@@ -1,6 +1,7 @@
 package hw06pipelineexecution
 
 import (
+	"go.uber.org/goleak"
 	"strconv"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ const (
 )
 
 func TestPipeline(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	// Stage generator
 	g := func(_ string, f func(v interface{}) interface{}) Stage {
 		return func(in In) Out {
@@ -47,7 +50,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, nil, stages...) {
 			result = append(result, s.(string))
@@ -80,7 +83,7 @@ func TestPipeline(t *testing.T) {
 			close(in)
 		}()
 
-		result := make([]string, 0, 10)
+		result := make([]string, 0, len(data))
 		start := time.Now()
 		for s := range ExecutePipeline(in, done, stages...) {
 			result = append(result, s.(string))
@@ -89,5 +92,55 @@ func TestPipeline(t *testing.T) {
 
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
+	})
+
+	t.Run("ignore nil stage", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{1, 2, 3, 4, 5}
+
+		go func() {
+			defer close(in)
+
+			for _, v := range data {
+				in <- v
+			}
+		}()
+
+		stagesWithNil := []Stage{nil}
+		stagesWithNil = append(stagesWithNil, stages...)
+		stagesWithNil = append(stagesWithNil, nil)
+
+		result := make([]string, 0, len(data))
+		for s := range ExecutePipeline(in, nil, stagesWithNil...) {
+			result = append(result, s.(string))
+		}
+
+		require.Equal(t, []string{"102", "104", "106", "108", "110"}, result)
+	})
+
+	t.Run("nil input returns nil output", func(t *testing.T) {
+		out := ExecutePipeline(nil, nil, stages...)
+
+		require.Nil(t, out)
+	})
+
+	t.Run("empty stages list returns input as is", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{1, 2, 3, 4, 5}
+
+		go func() {
+			defer close(in)
+
+			for _, v := range data {
+				in <- v
+			}
+		}()
+
+		result := make([]int, 0, len(data))
+		for s := range ExecutePipeline(in, nil, []Stage{}...) {
+			result = append(result, s.(int))
+		}
+
+		require.Equal(t, data, result)
 	})
 }
