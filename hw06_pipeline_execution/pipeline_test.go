@@ -1,12 +1,12 @@
 package hw06pipelineexecution
 
 import (
-	"go.uber.org/goleak"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 const (
