@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 )
 
 var (
@@ -18,5 +20,17 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	if from == "" || to == "" {
+		flag.Usage()
+
+		os.Exit(1)
+	}
+
+	err := Copy(from, to, offset, limit, os.Stdout)
+	if err != nil {
+		fmt.Println(err)
+
+		os.Exit(1)
+	}
 }
