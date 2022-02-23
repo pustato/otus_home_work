@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -65,7 +65,7 @@ func ReadDir(dir string) (Environment, error) {
 			continue
 		}
 
-		value, err := readValue(fmt.Sprintf("%s/%s", dir, name))
+		value, err := readValue(filepath.Join(dir, name))
 		if err != nil {
 			return result, ErrFileInDirectoryIsNotReadable
 		}
