@@ -15,6 +15,9 @@ func createEnv(env Environment) []string {
 	result := make([]string, 0, len(env)+len(originalEnv))
 	for _, envEntity := range originalEnv {
 		entityArr := strings.SplitN(envEntity, "=", 2)
+		if len(entityArr) != 2 {
+			continue
+		}
 		name, value := entityArr[0], entityArr[1]
 
 		if valToReplace, ok := env[name]; ok {
