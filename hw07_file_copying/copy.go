@@ -23,7 +23,7 @@ var (
 )
 
 type writerWithProgress struct {
-	dst        *os.File
+	dst        io.Writer
 	output     io.Writer
 	totalBytes int64
 	written    int64
