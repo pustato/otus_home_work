@@ -1,10 +1,24 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/spf13/cobra"
 )
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print app version",
+	Run: func(cmd *cobra.Command, args []string) {
+		printVersion()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(versionCmd)
+}
 
 var (
 	release   = "UNKNOWN"

@@ -1,0 +1,49 @@
+version: "3.3"
+
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - calendar-network
+
+  migration:
+    image: calendar:develop
+    restart: on-failure
+    environment: &calendarEnv
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    entrypoint: /bin/sh -c 'while ! nc -z db 5432; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml migrate'
+    depends_on:
+      - db
+    networks:
+      - calendar-network
+
+  calendar:
+    image: calendar:develop
+    environment: *calendarEnv
+    depends_on:
+      - migration
+    entrypoint: /bin/sh -c 'while ! nc -z db 5432; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml http'
+    ports:
+      - "8000:8000"
+    networks:
+      - calendar-network
+
+networks:
+  calendar-network:
+    driver: bridge
+
+volumes:
+  postgres:
