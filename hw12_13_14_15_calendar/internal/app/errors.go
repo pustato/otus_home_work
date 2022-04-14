@@ -1,4 +1,4 @@
-package application
+package app
 
 import (
 	"errors"
@@ -23,9 +23,11 @@ func (e *ValidationErrors) Errors() []error {
 func (e *ValidationErrors) Error() string {
 	builder := strings.Builder{}
 
-	for _, err := range e.errors {
+	for i, err := range e.errors {
+		if i != 0 {
+			builder.WriteString("\n")
+		}
 		builder.WriteString(err.Error())
-		builder.WriteString("\n")
 	}
 
 	return builder.String()

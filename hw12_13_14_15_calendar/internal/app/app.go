@@ -1,4 +1,4 @@
-package application
+package app
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 )
 
 type EventsUseCase interface {
+	GetByID(ctx context.Context, id int64) (*storage.Event, error)
 	Create(ctx context.Context, dto CreateDTO) (int64, error)
 	Update(ctx context.Context, id int64, dto UpdateDTO) error
 	Delete(ctx context.Context, id int64) error

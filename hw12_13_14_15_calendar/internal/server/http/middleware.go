@@ -46,6 +46,9 @@ func loggingMiddleware(next http.Handler, log logger.Logger) http.Handler {
 			r.UserAgent(),
 		}, " ")
 
-		log.Info(msg)
+		log.Info(msg,
+			"type", "access",
+			"context", "http",
+		)
 	})
 }

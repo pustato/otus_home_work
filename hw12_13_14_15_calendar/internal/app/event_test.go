@@ -1,4 +1,4 @@
-package application
+package app
 
 import (
 	"context"
@@ -51,6 +51,61 @@ func createDtoToEvent(t *testing.T, dto CreateDTO) storage.Event {
 		TimeEnd:     dto.TimeEnd,
 		NotifyAt:    storage.CreateNotificationTime(dto.TimeStart, dto.Notify),
 	}
+}
+
+func TestEvents_Get(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		id := int64(32)
+
+		expected := eventStub(t)
+		storageMock := mockstorage.EventStorage{}
+		storageMock.
+			On("GetByID", ctx, id).
+			Once().
+			Return(&expected, nil)
+
+		uc := Events{
+			storage: &storageMock,
+		}
+		actual, err := uc.GetByID(ctx, id)
+		require.NoError(t, err)
+		require.Equal(t, &expected, actual)
+	})
+
+	t.Run("not found case", func(t *testing.T) {
+		id := int64(91)
+
+		storageMock := mockstorage.EventStorage{}
+		storageMock.
+			On("GetByID", ctx, id).
+			Once().
+			Return(nil, storage.ErrNotFound)
+
+		uc := Events{
+			storage: &storageMock,
+		}
+		actual, err := uc.GetByID(ctx, id)
+		require.Nil(t, actual)
+		require.ErrorIs(t, err, ErrEventIsNotExists)
+	})
+
+	t.Run("storage error case", func(t *testing.T) {
+		id := int64(128)
+		errTest := errors.New("some storage error")
+
+		storageMock := mockstorage.EventStorage{}
+		storageMock.
+			On("GetByID", ctx, id).
+			Once().
+			Return(nil, errTest)
+
+		uc := Events{
+			storage: &storageMock,
+		}
+		actual, err := uc.GetByID(ctx, id)
+		require.Nil(t, actual)
+		require.ErrorIs(t, err, errTest)
+	})
 }
 
 func TestEventUseCase_Create(t *testing.T) {

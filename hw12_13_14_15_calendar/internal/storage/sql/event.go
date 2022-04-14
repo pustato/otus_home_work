@@ -2,8 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
@@ -27,11 +25,12 @@ func (s *EventStorage) Create(ctx context.Context, event *storage.Event) (int64,
 			events (user_id, title, description, time_start, time_end, notify_at, created_at, updated_at)
 		VALUES 
 			(:user_id, :title, :description, :time_start, :time_end, :notify_at, :created_at, :updated_at)
+		RETURNING id
 		;
 `
 	now := time.Now()
 
-	res, err := s.db.NamedExecContext(
+	res, err := s.db.NamedQueryContext(
 		ctx,
 		q,
 		map[string]interface{}{
@@ -48,8 +47,13 @@ func (s *EventStorage) Create(ctx context.Context, event *storage.Event) (int64,
 	if err != nil {
 		return 0, fmt.Errorf("event create: %w", err)
 	}
-	event.ID, err = res.LastInsertId()
-	if err != nil {
+	defer func() {
+		_ = res.Close()
+		_ = res.Err()
+	}()
+
+	res.Next()
+	if err := res.Scan(&event.ID); err != nil {
 		return 0, fmt.Errorf("event retrieve last insert id: %w", err)
 	}
 
@@ -109,7 +113,7 @@ func (s *EventStorage) Delete(ctx context.Context, id int64) error {
 `
 
 	_, err := s.db.NamedExecContext(ctx, q, map[string]interface{}{
-		"id": "id",
+		"id": id,
 	})
 	if err != nil {
 		return fmt.Errorf("event delete: %w", err)
@@ -139,7 +143,7 @@ func (s *EventStorage) GetByID(ctx context.Context, id int64) (*storage.Event, e
 	e := storage.Event{}
 
 	rows, err := s.db.NamedQueryContext(ctx, q, map[string]interface{}{
-		"id": "id",
+		"id": id,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("event get by id: %w", err)
@@ -148,6 +152,10 @@ func (s *EventStorage) GetByID(ctx context.Context, id int64) (*storage.Event, e
 		_ = rows.Close()
 		_ = rows.Err()
 	}()
+
+	if !rows.Next() {
+		return nil, storage.ErrNotFound
+	}
 
 	if err := rows.Scan(
 		&e.ID,
@@ -160,10 +168,6 @@ func (s *EventStorage) GetByID(ctx context.Context, id int64) (*storage.Event, e
 		&e.CreatedAt,
 		&e.UpdatedAt,
 	); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, storage.ErrNotFound
-		}
-
 		return nil, fmt.Errorf("event get by id: %w", err)
 	}
 
@@ -191,6 +195,7 @@ func (s *EventStorage) FindForInterval(
 		WHERE
 			user_id=:user_id
 			AND time_start BETWEEN :from AND :to
+		ORDER BY time_start
 		LIMIT :limit OFFSET :offset
 		;
 `
