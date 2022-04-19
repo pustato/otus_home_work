@@ -16,6 +16,9 @@ type EventStorage interface {
 		userID int64,
 		from, to time.Time,
 		limit, offset uint8) ([]*Event, error)
+	FindUnNotified(ctx context.Context, t time.Time) ([]*Event, error)
+	MarkNotified(ctx context.Context, ids []int64) error
+	DeleteOlderThan(ctx context.Context, t time.Time) error
 }
 
 type NotificationTime = sql.NullTime
@@ -23,15 +26,16 @@ type NotificationTime = sql.NullTime
 var ErrNotFound = errors.New("not found")
 
 type Event struct {
-	ID          int64
-	UserID      int64
-	Title       string
-	Description string
-	TimeStart   time.Time
-	TimeEnd     time.Time
-	NotifyAt    NotificationTime
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID               int64
+	UserID           int64
+	Title            string
+	Description      string
+	TimeStart        time.Time
+	TimeEnd          time.Time
+	NotifyAt         NotificationTime
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	NotificationSent bool
 }
 
 func CreateNotificationTime(base time.Time, d time.Duration) NotificationTime {

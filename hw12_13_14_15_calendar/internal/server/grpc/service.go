@@ -141,8 +141,9 @@ func eventToGrpc(e *storage.Event) *pb.Event {
 			Valid: e.NotifyAt.Valid,
 			Time:  timestamppb.New(e.NotifyAt.Time),
 		},
-		CreatedAt: timestamppb.New(e.CreatedAt),
-		UpdatedAt: timestamppb.New(e.UpdatedAt),
+		CreatedAt:        timestamppb.New(e.CreatedAt),
+		UpdatedAt:        timestamppb.New(e.UpdatedAt),
+		NotificationSent: e.NotificationSent,
 	}
 }
 

@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +27,8 @@ var (
 )
 
 func printVersion() {
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+
 	if err := json.NewEncoder(os.Stdout).Encode(struct {
 		Release   string
 		BuildDate string

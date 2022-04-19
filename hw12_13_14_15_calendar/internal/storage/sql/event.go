@@ -133,14 +133,15 @@ func (s *EventStorage) GetByID(ctx context.Context, id int64) (*storage.Event, e
 			time_end,
 			notify_at,
 			created_at,
-			updated_at
+			updated_at,
+			notification_sent
 		FROM 
 			events
 		WHERE
 			id=:id
 		;
 `
-	e := storage.Event{}
+	e := &storage.Event{}
 
 	rows, err := s.db.NamedQueryContext(ctx, q, map[string]interface{}{
 		"id": id,
@@ -157,21 +158,11 @@ func (s *EventStorage) GetByID(ctx context.Context, id int64) (*storage.Event, e
 		return nil, storage.ErrNotFound
 	}
 
-	if err := rows.Scan(
-		&e.ID,
-		&e.UserID,
-		&e.Title,
-		&e.Description,
-		&e.TimeStart,
-		&e.TimeEnd,
-		&e.NotifyAt,
-		&e.CreatedAt,
-		&e.UpdatedAt,
-	); err != nil {
+	if err := s.scan(rows, e); err != nil {
 		return nil, fmt.Errorf("event get by id: %w", err)
 	}
 
-	return &e, nil
+	return e, nil
 }
 
 func (s *EventStorage) FindForInterval(
@@ -189,7 +180,8 @@ func (s *EventStorage) FindForInterval(
 			time_end,
 			notify_at,
 			created_at,
-			updated_at
+			updated_at,
+			notification_sent
 		FROM
 			events
 		WHERE
@@ -217,22 +209,12 @@ func (s *EventStorage) FindForInterval(
 	result := make([]*storage.Event, 0)
 
 	for rows.Next() {
-		e := storage.Event{}
-		if err := rows.Scan(
-			&e.ID,
-			&e.UserID,
-			&e.Title,
-			&e.Description,
-			&e.TimeStart,
-			&e.TimeEnd,
-			&e.NotifyAt,
-			&e.CreatedAt,
-			&e.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("storage find for interval: scan: %w", err)
+		e := &storage.Event{}
+		if err := s.scan(rows, e); err != nil {
+			return nil, fmt.Errorf("storage find for interval: %w", err)
 		}
 
-		result = append(result, &e)
+		result = append(result, e)
 	}
 
 	return result, nil
@@ -250,4 +232,112 @@ func (s *EventStorage) Connect(ctx context.Context, dsn string) error {
 
 func (s *EventStorage) Close() error {
 	return s.db.Close()
+}
+
+func (s *EventStorage) FindUnNotified(ctx context.Context, t time.Time) ([]*storage.Event, error) {
+	q := `
+		SELECT
+			id, 
+			user_id,
+			title,
+			description,
+			time_start, 
+			time_end,
+			notify_at,
+			created_at,
+			updated_at,
+			notification_sent
+		FROM
+			events
+		WHERE
+			notify_at IS NOT NULL 
+			AND notify_at <= :time
+			AND notification_sent = false
+			AND time_start > :time
+		;
+`
+
+	rows, err := s.db.NamedQueryContext(ctx, q, map[string]interface{}{
+		"time": t,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("event find unnotified: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+		_ = rows.Err()
+	}()
+
+	result := make([]*storage.Event, 0)
+
+	for rows.Next() {
+		e := &storage.Event{}
+		if err := s.scan(rows, e); err != nil {
+			return nil, fmt.Errorf("event find unnotified: %w", err)
+		}
+
+		result = append(result, e)
+	}
+
+	return result, nil
+}
+
+func (s *EventStorage) MarkNotified(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	q := `
+		UPDATE 
+			events 
+		SET 
+			notification_sent = true, updated_at = now()
+		WHERE 
+			id IN(?)
+		;
+`
+	q, args, err := sqlx.In(q, ids)
+	if err != nil {
+		return fmt.Errorf("event mark notified build query: %w", err)
+	}
+
+	q = sqlx.Rebind(sqlx.DOLLAR, q)
+	if _, err := s.db.ExecContext(ctx, q, args...); err != nil {
+		return fmt.Errorf("event mark notified exec: %w", err)
+	}
+
+	return nil
+}
+
+func (s *EventStorage) DeleteOlderThan(ctx context.Context, t time.Time) error {
+	q := `
+		DELETE FROM events WHERE time_end <= :time;
+`
+
+	if _, err := s.db.NamedExecContext(ctx, q, map[string]interface{}{
+		"time": t,
+	}); err != nil {
+		return fmt.Errorf("event delete older than: %w", err)
+	}
+
+	return nil
+}
+
+func (s *EventStorage) scan(rows *sqlx.Rows, e *storage.Event) error {
+	if err := rows.Scan(
+		&e.ID,
+		&e.UserID,
+		&e.Title,
+		&e.Description,
+		&e.TimeStart,
+		&e.TimeEnd,
+		&e.NotifyAt,
+		&e.CreatedAt,
+		&e.UpdatedAt,
+		&e.NotificationSent,
+	); err != nil {
+		return fmt.Errorf("scan: %w", err)
+	}
+
+	return nil
 }

@@ -23,7 +23,7 @@ var grpcCmd = &cobra.Command{
 		logg, cleanupLogger := requireLogger(config.Logger)
 		defer cleanupLogger()
 
-		eventRepo, cleanupEventRepo := requireEventRepo(config.Storage)
+		eventRepo, cleanupEventRepo := requireEventStorage(config.Storage)
 		defer cleanupEventRepo()
 
 		events := app.NewEventUseCase(eventRepo)

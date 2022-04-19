@@ -13,3 +13,12 @@ logger:
 
 storage:
   driver: db
+
+queue:
+  host: rabbit
+  port: 5672
+  exchange: calendar
+
+scheduler:
+  send_notification: "1m"
+  delete_old: "0 0 */1 * *"

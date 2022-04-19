@@ -27,10 +27,11 @@ func (s *EventStorage) Create(_ context.Context, event *storage.Event) (int64, e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	noww := time.Now()
 	s.id++
 	event.ID = s.id
-	event.CreatedAt = time.Now()
-	event.UpdatedAt = time.Now()
+	event.CreatedAt = noww
+	event.UpdatedAt = noww
 
 	val := *event
 	cpy := val
@@ -114,4 +115,64 @@ func (s *EventStorage) FindForInterval(
 	}
 
 	return result, nil
+}
+
+func (s *EventStorage) FindUnNotified(_ context.Context, t time.Time) ([]*storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make([]*storage.Event, 0)
+
+	for _, e := range s.events {
+		if e.NotifyAt.Valid &&
+			(e.NotifyAt.Time.Equal(t) || e.NotifyAt.Time.Before(t)) &&
+			!e.NotificationSent &&
+			e.TimeStart.After(t) {
+			val := *e
+			cpy := val
+			result = append(result, &cpy)
+		}
+	}
+
+	return result, nil
+}
+
+func (s *EventStorage) MarkNotified(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	noww := time.Now()
+	for _, id := range ids {
+		e, ok := s.events[id]
+		if !ok {
+			continue
+		}
+
+		e.NotificationSent = true
+		e.UpdatedAt = noww
+	}
+
+	return nil
+}
+
+func (s *EventStorage) DeleteOlderThan(_ context.Context, t time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	toDelete := make([]int64, 0)
+	for id, e := range s.events {
+		if e.TimeEnd.Equal(t) || e.TimeEnd.Before(t) {
+			toDelete = append(toDelete, id)
+		}
+	}
+
+	for _, id := range toDelete {
+		delete(s.events, id)
+	}
+
+	return nil
 }
