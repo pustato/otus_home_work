@@ -1,4 +1,4 @@
-package application
+package app
 
 import (
 	"context"
@@ -15,6 +15,19 @@ var _ EventsUseCase = (*Events)(nil)
 
 type Events struct {
 	storage storage.EventStorage
+}
+
+func (c *Events) GetByID(ctx context.Context, id int64) (*storage.Event, error) {
+	e, err := c.storage.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, ErrEventIsNotExists
+		}
+
+		return nil, fmt.Errorf("event use case get: %w", err)
+	}
+
+	return e, nil
 }
 
 func (c *Events) Create(ctx context.Context, dto CreateDTO) (int64, error) {

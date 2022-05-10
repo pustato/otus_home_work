@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	HTTP    HTTPConf
+	GRPC    GRPCConf
 	Logger  LoggerConf
 	Storage StorageConf
 }
@@ -22,6 +23,11 @@ type LoggerConf struct {
 }
 
 type HTTPConf struct {
+	Host string `validate:"required"`
+	Port string `validate:"required"`
+}
+
+type GRPCConf struct {
 	Host string `validate:"required"`
 	Port string `validate:"required"`
 }
@@ -67,14 +73,20 @@ func bindEnv() {
 }
 
 func setDefaults() {
-	viper.SetDefault("http.host", "127.0.0.1")
+	viper.SetDefault("http.host", "0.0.0.0")
 	viper.SetDefault("http.port", "8000")
+	viper.SetDefault("grpc.host", "0.0.0.0")
+	viper.SetDefault("grpc.port", "50051")
 	viper.SetDefault("logger.target", "stderr")
 	viper.SetDefault("logger.encoding", "console")
 	viper.SetDefault("storage.driver", "memory")
 }
 
 func (c *HTTPConf) Addr() string {
+	return net.JoinHostPort(c.Host, c.Port)
+}
+
+func (c *GRPCConf) Addr() string {
 	return net.JoinHostPort(c.Host, c.Port)
 }
 

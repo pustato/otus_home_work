@@ -1,5 +1,6 @@
 BIN := "./bin/calendar"
 DOCKER_IMG="calendar:develop"
+GRPC_GEN_DIR="internal/server/grpc/pb"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := \
@@ -37,4 +38,16 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint up-dev
+generate:
+	rm -rf $(GRPC_GEN_DIR)
+	mkdir -p $(GRPC_GEN_DIR)
+	protoc \
+			--proto_path=api/ \
+			--go_out=$(GRPC_GEN_DIR) \
+			--go-grpc_out=$(GRPC_GEN_DIR) \
+			api/*.proto
+
+evans:
+	evans --proto=api/event_service.proto repl
+
+.PHONY: build run build-img run-img version test lint up-dev generate

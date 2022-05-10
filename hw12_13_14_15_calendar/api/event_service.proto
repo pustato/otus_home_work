@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+package event;
+option go_package = "./;pb";
+
+service Calendar {
+  rpc GetEvent(EventRequest) returns (Event) {}
+  rpc CreateEvent(CreateEventRequest) returns (EventResponse) {}
+  rpc UpdateEvent(UpdateEventRequest) returns (EmptyResponse) {}
+  rpc DeleteEvent(EventRequest) returns (EmptyResponse) {}
+  rpc FindForDay(PeriodRequest) returns (EventCollection) {}
+  rpc FindForWeek(PeriodRequest) returns (EventCollection) {}
+  rpc FindForMonth(PeriodRequest) returns (EventCollection) {}
+}
+
+message Event {
+  int64 id = 1;
+  int64 user_id = 2;
+  string title = 3;
+  string description = 4;
+  google.protobuf.Timestamp time_start = 5;
+  google.protobuf.Timestamp time_end = 6;
+  NullableNotificationTime notify_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message EventCollection {
+  repeated Event events = 1;
+}
+
+message EventRequest {
+  int64 id = 1;
+}
+
+message CreateEventRequest {
+  int64 user_id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp time_start = 4;
+  google.protobuf.Timestamp time_end = 5;
+  google.protobuf.Duration notify = 6;
+}
+
+message EventResponse {
+  int64 id = 1;
+}
+
+message UpdateEventRequest {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp timeStart = 4;
+  google.protobuf.Timestamp timeEnd = 5;
+  google.protobuf.Duration notify = 6;
+}
+
+message EmptyResponse {}
+
+message PeriodRequest {
+  int64 user_id = 1;
+  google.protobuf.Timestamp date = 2;
+  uint32 limit = 3;
+  uint32 offset = 4;
+}
+
+message NullableNotificationTime {
+    bool valid = 1;
+    google.protobuf.Timestamp time = 2;
+}

@@ -30,7 +30,7 @@ services:
     networks:
       - calendar-network
 
-  calendar:
+  http:
     image: calendar:develop
     environment: *calendarEnv
     depends_on:
@@ -38,6 +38,17 @@ services:
     entrypoint: /bin/sh -c 'while ! nc -z db 5432; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml http'
     ports:
       - "8000:8000"
+    networks:
+      - calendar-network
+
+  grpc:
+    image: calendar:develop
+    environment: *calendarEnv
+    depends_on:
+      - migration
+    entrypoint: /bin/sh -c 'while ! nc -z db 5432; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml grpc'
+    ports:
+      - "50051:50051"
     networks:
       - calendar-network
 

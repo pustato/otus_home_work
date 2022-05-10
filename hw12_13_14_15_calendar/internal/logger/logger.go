@@ -38,6 +38,7 @@ func New(level string, target string, encoding string) (*ZapLogger, error) {
 	config.OutputPaths = []string{target}
 	config.ErrorOutputPaths = []string{target}
 	config.DisableCaller = true
+	config.DisableStacktrace = false
 
 	zl, err := config.Build()
 	if err != nil {
