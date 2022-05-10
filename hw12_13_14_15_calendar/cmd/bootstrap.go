@@ -38,7 +38,7 @@ func requireLogger(config LoggerConf) (logger.Logger, CleanUpFunc) {
 	}
 }
 
-func requireEventRepo(config StorageConf) (storage.EventStorage, CleanUpFunc) {
+func requireEventStorage(config StorageConf) (storage.EventStorage, CleanUpFunc) {
 	if config.Driver == "memory" {
 		return memorystorage.New(), func() {}
 	}

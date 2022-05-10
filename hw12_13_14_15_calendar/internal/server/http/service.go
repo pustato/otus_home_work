@@ -44,15 +44,16 @@ type createEventResponse struct {
 }
 
 type eventResponse struct {
-	ID          int64   `json:"id"`
-	UserID      int64   `json:"userId"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	TimeStart   string  `json:"timeStart"`
-	TimeEnd     string  `json:"timeEnd"`
-	NotifyAt    *string `json:"notifyAt"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt"`
+	ID               int64   `json:"id"`
+	UserID           int64   `json:"userId"`
+	Title            string  `json:"title"`
+	Description      string  `json:"description"`
+	TimeStart        string  `json:"timeStart"`
+	TimeEnd          string  `json:"timeEnd"`
+	NotifyAt         *string `json:"notifyAt"`
+	CreatedAt        string  `json:"createdAt"`
+	UpdatedAt        string  `json:"updatedAt"`
+	NotificationSent bool    `json:"notificationSent"`
 }
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -289,6 +290,7 @@ func (s *calendarAPI) FindForPeriodHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *calendarAPI) writeResponse(w http.ResponseWriter, rsp *response, statusCode int) {
+	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", "application/json")
 	body, err := json.Marshal(rsp)
 	if err != nil {
@@ -297,11 +299,9 @@ func (s *calendarAPI) writeResponse(w http.ResponseWriter, rsp *response, status
 	}
 
 	if _, err := w.Write(body); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		s.logErrorf("writer response: %s", err.Error())
 		return
 	}
-	w.WriteHeader(statusCode)
 }
 
 func (s *calendarAPI) writeErrorResponse(w http.ResponseWriter, msg string, statusCode int) {
@@ -323,15 +323,16 @@ func (s *calendarAPI) storageEventToResponse(e *storage.Event) *eventResponse {
 	}
 
 	return &eventResponse{
-		ID:          e.ID,
-		UserID:      e.UserID,
-		Title:       e.Title,
-		Description: e.Description,
-		TimeStart:   e.TimeStart.Format(s.timeLayout),
-		TimeEnd:     e.TimeEnd.Format(s.timeLayout),
-		NotifyAt:    notify,
-		CreatedAt:   e.CreatedAt.Format(s.timeLayout),
-		UpdatedAt:   e.CreatedAt.Format(s.timeLayout),
+		ID:               e.ID,
+		UserID:           e.UserID,
+		Title:            e.Title,
+		Description:      e.Description,
+		TimeStart:        e.TimeStart.Format(s.timeLayout),
+		TimeEnd:          e.TimeEnd.Format(s.timeLayout),
+		NotifyAt:         notify,
+		CreatedAt:        e.CreatedAt.Format(s.timeLayout),
+		UpdatedAt:        e.CreatedAt.Format(s.timeLayout),
+		NotificationSent: e.NotificationSent,
 	}
 }
 

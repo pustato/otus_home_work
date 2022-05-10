@@ -10,10 +10,12 @@ import (
 )
 
 type Config struct {
-	HTTP    HTTPConf
-	GRPC    GRPCConf
-	Logger  LoggerConf
-	Storage StorageConf
+	HTTP      HTTPConf
+	GRPC      GRPCConf
+	Logger    LoggerConf
+	Storage   StorageConf
+	Queue     QueueConf
+	Scheduler SchedulerConf
 }
 
 type LoggerConf struct {
@@ -39,6 +41,19 @@ type StorageConf struct {
 	DBUser     string `mapstructure:"db_user" validate:"required_if=Driver db"`
 	DBPassword string `mapstructure:"db_password" validate:"required_if=Driver db"`
 	DBName     string `mapstructure:"db_name" validate:"required_if=Driver db"`
+}
+
+type QueueConf struct {
+	User     string `validate:"required"`
+	Password string `validate:"required"`
+	Host     string `validate:"required"`
+	Port     string `validate:"required"`
+	Exchange string `validate:"required"`
+}
+
+type SchedulerConf struct {
+	SendNotification string `mapstructure:"send_notification" validate:"required"`
+	DeleteOld        string `mapstructure:"delete_old" validate:"required"`
 }
 
 func NewConfig(r io.Reader) (*Config, error) {
@@ -70,16 +85,29 @@ func bindEnv() {
 	_ = viper.BindEnv("storage.db_user", "DB_USER")
 	_ = viper.BindEnv("storage.db_password", "DB_PASSWORD")
 	_ = viper.BindEnv("storage.db_name", "DB_NAME")
+
+	_ = viper.BindEnv("queue.user", "QUEUE_USER")
+	_ = viper.BindEnv("queue.password", "QUEUE_PASSWORD")
 }
 
 func setDefaults() {
 	viper.SetDefault("http.host", "0.0.0.0")
 	viper.SetDefault("http.port", "8000")
+
 	viper.SetDefault("grpc.host", "0.0.0.0")
 	viper.SetDefault("grpc.port", "50051")
+
 	viper.SetDefault("logger.target", "stderr")
 	viper.SetDefault("logger.encoding", "console")
+
 	viper.SetDefault("storage.driver", "memory")
+
+	viper.SetDefault("queue.host", "localhost")
+	viper.SetDefault("queue.port", "5672")
+	viper.SetDefault("queue.exchange", "calendar")
+
+	viper.SetDefault("scheduler.send_notification", "1m")
+	viper.SetDefault("scheduler.delete_old", "0 0 */1 * *")
 }
 
 func (c *HTTPConf) Addr() string {
@@ -99,4 +127,8 @@ func (c *StorageConf) dbConnectionString() string {
 		c.DBPassword,
 		c.DBName,
 	)
+}
+
+func (c *QueueConf) URI() string {
+	return fmt.Sprintf("amqp://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 }

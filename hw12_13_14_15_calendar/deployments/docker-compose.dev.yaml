@@ -15,6 +15,16 @@ services:
     networks:
       - calendar-network
 
+  rabbit:
+    image: rabbitmq:3.9.15-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${QUEUE_USER}
+      RABBITMQ_DEFAULT_PASS: ${QUEUE_PASSWORD}
+    ports:
+      - '15672:15672'
+    networks:
+      - rabbit-network
+
   migration:
     image: calendar:develop
     restart: on-failure
@@ -24,6 +34,8 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      QUEUE_USER: ${QUEUE_USER}
+      QUEUE_PASSWORD: ${QUEUE_PASSWORD}
     entrypoint: /bin/sh -c 'while ! nc -z db 5432; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml migrate'
     depends_on:
       - db
@@ -52,8 +64,42 @@ services:
     networks:
       - calendar-network
 
+  scheduler:
+    image: calendar:develop
+    environment: *calendarEnv
+    depends_on:
+      - migration
+      - rabbit
+    entrypoint: /bin/sh -c 'while ! nc -z rabbit 5672; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml scheduler'
+    networks:
+      - calendar-network
+      - rabbit-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 30s
+
+  sender:
+    image: calendar:develop
+    environment: *calendarEnv
+    depends_on:
+      - rabbit
+    entrypoint: /bin/sh -c 'while ! nc -z rabbit 5672; do sleep 1; done; /opt/calendar/calendar --config /etc/calendar/config.yaml sender'
+    networks:
+      - rabbit-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+        window: 30s
+
 networks:
   calendar-network:
+    driver: bridge
+  rabbit-network:
     driver: bridge
 
 volumes:
