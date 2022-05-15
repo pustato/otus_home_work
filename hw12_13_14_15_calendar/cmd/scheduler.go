@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -30,13 +29,15 @@ var schedulerCmd = &cobra.Command{
 		q := queue.New(config.Queue.URI())
 		if err := q.Connect(); err != nil {
 			logg.Error("scheduler connect: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		producer, err := q.CreateProducer(config.Queue.Exchange)
 		if err != nil {
 			logg.Error("scheduler create producer: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		ctx, cancel := signal.NotifyContext(context.Background(),
@@ -47,7 +48,8 @@ var schedulerCmd = &cobra.Command{
 		taskFactory := scheduler.NewTaskFactory(storage, producer)
 		if err := defineTasks(config.Scheduler, taskFactory, s, logg); err != nil {
 			logg.Error("scheduler define tasks: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		go func() {
@@ -56,7 +58,7 @@ var schedulerCmd = &cobra.Command{
 
 			if err := q.Close(); err != nil {
 				logg.Error("scheduler: " + err.Error())
-				os.Exit(1)
+				resultCode = 1
 			}
 		}()
 

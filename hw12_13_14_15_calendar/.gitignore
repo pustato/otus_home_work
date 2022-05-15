@@ -3,3 +3,4 @@ bin/
 .env
 configs/*
 !configs/config.example.yaml
+!configs/config.test.yaml

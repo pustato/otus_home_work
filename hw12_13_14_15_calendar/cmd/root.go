@@ -6,9 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var resultCode = 0
+
 var rootCmd = &cobra.Command{
 	Use:   "calendar",
 	Short: "Calendar application",
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		os.Exit(resultCode)
+	},
 }
 
 func Execute() {

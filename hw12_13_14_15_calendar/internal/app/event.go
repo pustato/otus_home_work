@@ -136,7 +136,7 @@ func (c *Events) validate(ctx context.Context, e *storage.Event) error {
 		errs = append(errs, fmt.Errorf("title lengts is %d/%d: %w", len(e.Title), MaxEventTitleLength, ErrTitleTooLong))
 	}
 
-	if e.TimeStart.After(e.TimeEnd) {
+	if e.TimeStart == e.TimeEnd || e.TimeStart.After(e.TimeEnd) {
 		errs = append(errs, ErrTimeEndMustBeGreaterThanStart)
 	}
 

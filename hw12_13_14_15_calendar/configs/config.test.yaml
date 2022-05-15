@@ -1,0 +1,24 @@
+http:
+  host: 0.0.0.0
+  port: 8000
+
+grpc:
+  host: 0.0.0.0
+  port: 50051
+
+logger:
+  target: stderr
+  level: warn
+  encoding: console
+
+storage:
+  driver: db
+
+queue:
+  host: rabbit
+  port: 5672
+  exchange: calendar
+
+scheduler:
+  send_notification: "1s"
+  delete_old: "1s"

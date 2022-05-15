@@ -17,12 +17,12 @@ import (
 
 const internalError = "internal server error"
 
-type response struct {
+type Response struct {
 	Error *string     `json:"error"`
 	Data  interface{} `json:"data"`
 }
 
-type createEventRequest struct {
+type CreateEventRequest struct {
 	UserID      int64  `json:"userId"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -31,7 +31,7 @@ type createEventRequest struct {
 	Notify      string `json:"notify"`
 }
 
-type updateEventRequest struct {
+type UpdateEventRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	TimeStart   string `json:"timeStart"`
@@ -39,11 +39,11 @@ type updateEventRequest struct {
 	Notify      string `json:"notify"`
 }
 
-type createEventResponse struct {
+type CreateEventResponse struct {
 	ID int64 `json:"id"`
 }
 
-type eventResponse struct {
+type EventResponse struct {
 	ID               int64   `json:"id"`
 	UserID           int64   `json:"userId"`
 	Title            string  `json:"title"`
@@ -103,7 +103,7 @@ func (s *calendarAPI) GetByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeResponse(w, &response{
+	s.writeResponse(w, &Response{
 		nil,
 		s.storageEventToResponse(e),
 	}, http.StatusOK)
@@ -113,7 +113,7 @@ func (s *calendarAPI) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), s.timeout)
 	defer cancel()
 
-	rq := &createEventRequest{}
+	rq := &CreateEventRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rq); err != nil {
 		s.logErrorf("http event create: decode request: %s", err.Error())
 		s.writeErrorResponse(w, "malformed json", http.StatusBadRequest)
@@ -140,7 +140,7 @@ func (s *calendarAPI) CreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeResponse(w, &response{nil, createEventResponse{id}}, http.StatusCreated)
+	s.writeResponse(w, &Response{nil, CreateEventResponse{id}}, http.StatusCreated)
 }
 
 func (s *calendarAPI) UpdateHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (s *calendarAPI) UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rq := &updateEventRequest{}
+	rq := &UpdateEventRequest{}
 	if err := json.NewDecoder(r.Body).Decode(rq); err != nil {
 		s.logErrorf("http event update: decode request: %s", err.Error())
 		s.writeErrorResponse(w, "malformed json", http.StatusBadRequest)
@@ -282,14 +282,14 @@ func (s *calendarAPI) FindForPeriodHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	rspEvents := make([]*eventResponse, 0, len(events))
+	rspEvents := make([]*EventResponse, 0, len(events))
 	for _, e := range events {
 		rspEvents = append(rspEvents, s.storageEventToResponse(e))
 	}
-	s.writeResponse(w, &response{nil, rspEvents}, http.StatusOK)
+	s.writeResponse(w, &Response{nil, rspEvents}, http.StatusOK)
 }
 
-func (s *calendarAPI) writeResponse(w http.ResponseWriter, rsp *response, statusCode int) {
+func (s *calendarAPI) writeResponse(w http.ResponseWriter, rsp *Response, statusCode int) {
 	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", "application/json")
 	body, err := json.Marshal(rsp)
@@ -305,7 +305,7 @@ func (s *calendarAPI) writeResponse(w http.ResponseWriter, rsp *response, status
 }
 
 func (s *calendarAPI) writeErrorResponse(w http.ResponseWriter, msg string, statusCode int) {
-	rsp := response{&msg, nil}
+	rsp := Response{&msg, nil}
 	s.writeResponse(w, &rsp, statusCode)
 }
 
@@ -315,14 +315,14 @@ func (s *calendarAPI) logErrorf(format string, a ...interface{}) {
 	)
 }
 
-func (s *calendarAPI) storageEventToResponse(e *storage.Event) *eventResponse {
+func (s *calendarAPI) storageEventToResponse(e *storage.Event) *EventResponse {
 	var notify *string
 	if e.NotifyAt.Valid {
 		t := e.NotifyAt.Time.Format(s.timeLayout)
 		notify = &t
 	}
 
-	return &eventResponse{
+	return &EventResponse{
 		ID:               e.ID,
 		UserID:           e.UserID,
 		Title:            e.Title,
@@ -336,7 +336,7 @@ func (s *calendarAPI) storageEventToResponse(e *storage.Event) *eventResponse {
 	}
 }
 
-func (s *calendarAPI) createRequestToDTO(r *createEventRequest) (*app.CreateDTO, error) {
+func (s *calendarAPI) createRequestToDTO(r *CreateEventRequest) (*app.CreateDTO, error) {
 	ts, err := time.Parse(s.timeLayout, r.TimeStart)
 	if err != nil {
 		return nil, fmt.Errorf("parse time start: %w", err)
@@ -362,7 +362,7 @@ func (s *calendarAPI) createRequestToDTO(r *createEventRequest) (*app.CreateDTO,
 	}, nil
 }
 
-func (s *calendarAPI) updateRequestToDTO(r *updateEventRequest) (*app.UpdateDTO, error) {
+func (s *calendarAPI) updateRequestToDTO(r *UpdateEventRequest) (*app.UpdateDTO, error) {
 	ts, err := time.Parse(s.timeLayout, r.TimeStart)
 	if err != nil {
 		return nil, fmt.Errorf("parse time start: %w", err)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
 	"os/signal"
 	"syscall"
 
@@ -15,7 +14,6 @@ import (
 var grpcCmd = &cobra.Command{
 	Use:   "grpc",
 	Short: "Start grpc server",
-
 	Run: func(cmd *cobra.Command, args []string) {
 		configPath := cmd.Flag("config").Value.String()
 
@@ -45,7 +43,8 @@ var grpcCmd = &cobra.Command{
 		if err := server.Start(); err != nil {
 			logg.Error("failed to start grpc server: " + err.Error())
 			cancel()
-			os.Exit(1)
+
+			resultCode = 1
 		}
 	},
 }
