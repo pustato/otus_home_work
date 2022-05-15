@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -49,7 +48,8 @@ var httpCmd = &cobra.Command{
 		if err := server.Start(); err != nil {
 			logg.Error("failed to start http server: " + err.Error())
 			cancel()
-			os.Exit(1)
+
+			resultCode = 1
 		}
 	},
 }

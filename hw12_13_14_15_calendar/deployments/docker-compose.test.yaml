@@ -1,0 +1,34 @@
+version: "3.3"
+
+services:
+  test:
+    build:
+      context: ./../
+      dockerfile: ./build/test.Dockerfile
+    depends_on:
+      - http
+      - grpc
+      - scheduler
+    networks:
+      - calendar-network
+      - rabbit-network
+
+  migration:
+    volumes:
+      - ./../configs/config.test.yaml:/etc/calendar/config.yaml
+
+  http:
+    volumes:
+      - ./../configs/config.test.yaml:/etc/calendar/config.yaml
+
+  grpc:
+    volumes:
+      - ./../configs/config.test.yaml:/etc/calendar/config.yaml
+
+  scheduler:
+    volumes:
+      - ./../configs/config.test.yaml:/etc/calendar/config.yaml
+
+  sender:
+    volumes:
+      - ./../configs/config.test.yaml:/etc/calendar/config.yaml

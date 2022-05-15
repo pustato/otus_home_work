@@ -34,16 +34,12 @@ func (c *AMQPConsumer) Consume(h MessageHandler) error {
 		select {
 		case <-c.closeChan:
 			return nil
-		default:
-			select {
-			case d := <-deliveries:
-				h(&Message{
-					Key:     d.RoutingKey,
-					Payload: d.Body,
-				})
-				_ = d.Ack(false)
-			default:
-			}
+		case d := <-deliveries:
+			h(&Message{
+				Key:     d.RoutingKey,
+				Payload: d.Body,
+			})
+			_ = d.Ack(false)
 		}
 	}
 }

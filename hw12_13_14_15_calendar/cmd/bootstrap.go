@@ -19,7 +19,9 @@ func requireConfig(configPath string) *Config {
 	if err != nil {
 		log.Fatalln("cannot read config file:", configPath)
 	}
+
 	config, err := NewConfig(c)
+	c.Close()
 	if err != nil {
 		log.Fatalln("config creating error:", err)
 	}

@@ -169,7 +169,8 @@ func (s *EventStorage) FindForInterval(
 	ctx context.Context,
 	userID int64,
 	from, to time.Time,
-	limit, offset uint8) ([]*storage.Event, error) {
+	limit, offset uint8,
+) ([]*storage.Event, error) {
 	q := `
 		SELECT
 			id, 
@@ -263,16 +264,16 @@ func (s *EventStorage) FindUnNotified(ctx context.Context, t time.Time) ([]*stor
 	if err != nil {
 		return nil, fmt.Errorf("event find unnotified: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-		_ = rows.Err()
-	}()
+	defer rows.Close()
 
 	result := make([]*storage.Event, 0)
 
 	for rows.Next() {
 		e := &storage.Event{}
 		if err := s.scan(rows, e); err != nil {
+			return nil, fmt.Errorf("event find unnotified: %w", err)
+		}
+		if err := rows.Err(); err != nil {
 			return nil, fmt.Errorf("event find unnotified: %w", err)
 		}
 

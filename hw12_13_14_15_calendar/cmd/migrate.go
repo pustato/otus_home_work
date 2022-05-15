@@ -32,17 +32,21 @@ var migrateCmd = &cobra.Command{
 		db, err := sql.Open("pgx", config.Storage.dbConnectionString())
 		if err != nil {
 			logg.Error(fmt.Sprintf("cannot connect to DB: %v", err))
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
+		defer db.Close()
 
 		if err := goose.SetDialect("postgres"); err != nil {
 			logg.Error(fmt.Sprintf("migration prepare failed: %v", err))
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		if err := goose.Up(db, "migrations"); err != nil {
 			logg.Error(fmt.Sprintf("migration up failed: %v", err))
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		logg.Info("migrations done")

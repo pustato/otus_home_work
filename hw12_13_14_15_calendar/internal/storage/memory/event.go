@@ -88,7 +88,8 @@ func (s *EventStorage) FindForInterval(
 	_ context.Context,
 	userID int64,
 	from, to time.Time,
-	limit, offset uint8) ([]*storage.Event, error) {
+	limit, offset uint8,
+) ([]*storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

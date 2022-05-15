@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"os"
 	"os/signal"
 	"syscall"
 
@@ -28,13 +27,15 @@ var senderCmd = &cobra.Command{
 		q := queue.New(config.Queue.URI())
 		if err := q.Connect(); err != nil {
 			logg.Error("sender connect: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		consumer, err := q.CreateConsumer(config.Queue.Exchange, eventsQueueName, scheduler.EventNotificationKey)
 		if err != nil {
 			logg.Error("sender create consumer: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 
 		ctx, cancel := signal.NotifyContext(context.Background(),
@@ -47,7 +48,7 @@ var senderCmd = &cobra.Command{
 			logg.Info("stopping sender")
 			if err := q.Close(); err != nil {
 				logg.Error("sender close queue: " + err.Error())
-				os.Exit(1)
+				resultCode = 1
 			}
 		}()
 
@@ -64,7 +65,8 @@ var senderCmd = &cobra.Command{
 			logg.Info(string(m.Payload))
 		}); err != nil {
 			logg.Error("sender consume: " + err.Error())
-			os.Exit(1)
+			resultCode = 1
+			return
 		}
 	},
 }
